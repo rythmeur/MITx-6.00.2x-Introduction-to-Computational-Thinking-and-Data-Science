@@ -88,4 +88,4 @@ def noReplacementSimulation(numTrials):
             event_occured+=1.
     return event_occured/numTrials
 
-print noReplacementSimulation(100)
+print noReplacementSimulation(1000)

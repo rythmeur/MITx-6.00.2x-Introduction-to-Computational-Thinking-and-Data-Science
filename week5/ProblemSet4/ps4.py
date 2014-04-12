@@ -46,3 +46,16 @@ def simulationTwoDrugsDelayedTreatment(numTrials):
     numTrials: number of simulation runs to execute (an integer)
     """
     # TODO
+
+numViruses = 100
+maxPop = 1000
+maxBirthProb = 0.1
+clearProb = 0.05
+resistances = {'guttagonol': False}
+mutProb = 0.05
+viruses = [];
+for i in range(numViruses):
+    virus = ResistantVirus(maxBirthProb, clearProb, resistances, mutProb);
+    viruses.append(virus);
+
+patient = TreatedPatient(viruses, maxPop);

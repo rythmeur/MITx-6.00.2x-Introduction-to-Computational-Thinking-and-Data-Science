@@ -1,0 +1,391 @@
+import pylab
+
+class Item(object):
+    def __init__(self, n, v, w):
+        self.name = n
+        self.value = float(v)
+        self.weight = float(w)
+    def getName(self):
+        return self.name
+    def getValue(self):
+        return self.value
+    def getWeight(self):
+        return self.weight
+    def __str__(self):
+        result = '<' + self.name + ', ' + str(self.value) + ', '\
+                 + str(self.weight) + '>'
+        return result
+
+def buildItems():
+    names = ['clock', 'painting', 'radio', 'vase', 'book',
+             'computer']
+    vals = [175,90,20,50,10,200]
+    weights = [10,9,4,2,1,20]
+    Items = []
+    for i in range(len(vals)):
+        Items.append(Item(names[i], vals[i], weights[i]))
+    return Items
+
+def greedy(Items, maxWeight, keyFcn):
+    assert type(Items) == list and maxWeight >= 0
+    ItemsCopy = sorted(Items, key=keyFcn, reverse = True)
+    result = []
+    totalVal = 0.0
+    totalWeight = 0.0
+    i = 0
+    while totalWeight < maxWeight and i < len(Items):
+        if (totalWeight + ItemsCopy[i].getWeight()) <= maxWeight:
+            result.append((ItemsCopy[i]))
+            totalWeight += ItemsCopy[i].getWeight()
+            totalVal += ItemsCopy[i].getValue()
+        i += 1
+    return (result, totalVal)
+
+def value(item):
+    return item.getValue()
+
+def weightInverse(item):
+    return 1.0/item.getWeight()
+
+def density(item):
+    return item.getValue()/item.getWeight()
+
+def testGreedy(Items, constraint, getKey):
+    taken, val = greedy(Items, constraint, getKey)
+    print ('Total value of items taken = ' + str(val))
+    for item in taken:
+        print '  ', item
+
+def testGreedys(maxWeight = 20):
+    Items = buildItems()
+    print('Items to choose from:')
+    for item in Items:
+        print '  ', item
+    print 'Use greedy by value to fill a knapsack of size', maxWeight
+    testGreedy(Items, maxWeight, value)
+    print 'Use greedy by weight to fill a knapsack of size', maxWeight
+    testGreedy(Items, maxWeight, weightInverse)
+    print 'Use greedy by density to fill a knapsack of size', maxWeight
+    testGreedy(Items, maxWeight, density)
+
+def dToB(n, numDigits):
+    """requires: n is a natural number less than 2**numDigits
+      returns a binary string of length numDigits representing the
+              the decimal number n."""
+    assert type(n)==int and type(numDigits)==int and n >=0 and n < 2**numDigits
+    bStr = ''
+    while n > 0:
+        bStr = str(n % 2) + bStr
+        n = n//2
+    while numDigits - len(bStr) > 0:
+        bStr = '0' + bStr
+    return bStr
+
+def genPset(Items):
+    """Generate a list of lists representing the power set of Items"""
+    numSubsets = 2**len(Items)
+    templates = []
+    for i in range(numSubsets):
+        templates.append(dToB(i, len(Items)))
+    pset = []
+    for t in templates:
+        elem = []
+        for j in range(len(t)):
+            if t[j] == '1':
+                elem.append(Items[j])
+        pset.append(elem)
+    return pset
+
+def chooseBest(pset, constraint, getVal, getWeight):
+    bestVal = 0.0
+    bestSet = None
+    for Items in pset:
+        ItemsVal = 0.0
+        ItemsWeight = 0.0
+        for item in Items:
+            ItemsVal += getVal(item)
+            ItemsWeight += getWeight(item)
+        if ItemsWeight <= constraint and ItemsVal > bestVal:
+            bestVal = ItemsVal
+            bestSet = Items
+    return (bestSet, bestVal)
+
+def testBest():
+    Items = buildItems()
+    pset = genPset(Items)
+    taken, val = chooseBest(pset, 20, Item.getValue, Item.getWeight)
+    print ('Total value of items taken = ' + str(val))
+    for item in taken:
+        print '  ', item
+
+def maxVal(toConsider, avail):
+    if toConsider == [] or avail == 0:
+        result = (0, ())
+    elif toConsider[0].getWeight() > avail:
+        result = maxVal(toConsider[1:], avail)
+    else:
+        nextItem = toConsider[0]
+
+        #Explore left branch
+        withVal, withToTake = maxVal(toConsider[1:],
+                                      avail - nextItem.getWeight())
+        withVal += nextItem.getValue()
+        #Explore right branch
+        withoutVal, withoutToTake = maxVal(toConsider[1:], avail)
+
+        #Choose better branch
+        if withVal > withoutVal:
+            result = (withVal, withToTake + (nextItem,))
+        else:
+            result = (withoutVal, withoutToTake)
+    return result
+
+def smallTest():
+    Items = buildItems()
+    val, taken = maxVal(Items, 20)
+    for item in taken:
+        print(item)
+    print ('Total value of items taken = ' + str(val))
+
+
+
+# generate all combinations of N items
+def powerSet(items):
+    N = len(items)
+    # enumerate the 2**N possible combinations
+    for i in xrange(2**N):
+        combo = []
+        for j in xrange(N):
+            # test bit jth of integer i
+            if (i >> j) % 2 == 1:
+                combo.append(items[j])
+        yield combo
+
+# items = buildItems()
+
+
+def yieldAllCombos(items):
+    """
+        Generates all combinations of N items into two bags, whereby each
+        item is in one or zero bags.
+
+        Yields a tuple, (bag1, bag2), where each bag is represented as a list
+        of which item(s) are in each bag.
+    """
+    # Your code here
+    N = len(items)
+    # enumerate the 2**N possible combinations
+    for i in xrange(3**N):
+        combo1 = []
+        combo2 = []
+        for j in xrange(N):
+            # test bit jth of integer i
+            if  (i // (3**j)) % 3 == 1:
+                combo1.append(items[j])
+            elif  (i // (3**j)) % 3 == 2:
+                combo2.append(items[j])
+        yield (combo1,combo2)
+
+class Node(object):
+    def __init__(self, name):
+        self.name = str(name)
+    def getName(self):
+        return self.name
+    def __str__(self):
+        return self.name
+
+class Edge(object):
+    def __init__(self, src, dest):
+        self.src = src
+        self.dest = dest
+    def getSource(self):
+        return self.src
+    def getDestination(self):
+        return self.dest
+    def __str__(self):
+        return str(self.src) + '->' + str(self.dest)
+
+class WeightedEdge(Edge):
+    def __init__(self, src, dest, weight = 1.0):
+        self.src = src
+        self.dest = dest
+        self.weight = weight
+    def getWeight(self):
+        return self.weight
+    def __str__(self):
+        return str(self.src) + '->(' + str(self.weight) + ')'\
+            + str(self.dest)
+
+class Digraph(object):
+    def __init__(self):
+        self.nodes = set([])
+        self.edges = {}
+    def addNode(self, node):
+        if node in self.nodes:
+            raise ValueError('Duplicate node')
+        else:
+            self.nodes.add(node)
+            self.edges[node] = []
+    def addEdge(self, edge):
+        src = edge.getSource()
+        dest = edge.getDestination()
+        if not(src in self.nodes and dest in self.nodes):
+            raise ValueError('Node not in graph')
+        self.edges[src].append(dest)
+    def childrenOf(self, node):
+        return self.edges[node]
+    def hasNode(self, node):
+        return node in self.nodes
+    def __str__(self):
+        res = ''
+        for k in self.edges:
+            for d in self.edges[k]:
+                res = res + str(k) + '->' + str(d) + '\n'
+        return res[:-1]
+
+class Graph(Digraph):
+    def addEdge(self, edge):
+        Digraph.addEdge(self, edge)
+        rev = Edge(edge.getDestination(), edge.getSource())
+        Digraph.addEdge(self, rev)
+
+
+def printPath(path):
+    # a path is a list of nodes
+    result = ''
+    for i in range(len(path)):
+        if i == len(path) - 1:
+            result = result + str(path[i])
+        else:
+            result = result + str(path[i]) + '->'
+    return result
+
+nodes = []
+nodes.append(Node("ABC")) # nodes[0]
+nodes.append(Node("ACB")) # nodes[1]
+nodes.append(Node("BAC")) # nodes[2]
+nodes.append(Node("BCA")) # nodes[3]
+nodes.append(Node("CAB")) # nodes[4]
+nodes.append(Node("CBA")) # nodes[5]
+
+g = Graph()
+for n in nodes:
+    g.addNode(n)
+for node1 in range(len(nodes)):
+    for node2 in range(node1+1,len(nodes)):
+        for i in [0,2]:
+            n1,n2=nodes[node1].getName(),nodes[node2].getName()
+            if (n1!=n2) and (n1[i]==n2[i]):
+                g.addEdge(Edge(nodes[node1],nodes[node2]))
+
+# print g
+
+class puzzle(object):
+    def __init__(self, order):
+        self.label = order
+        for index in range(9):
+            if order[index] == '0':
+                self.spot = index
+                return None
+    def transition(self, to):
+        label = self.label
+        blankLocation = self.spot
+        newBlankLabel = str(label[to])
+        newLabel = ''
+        for i in range(9):
+            if i == to:
+                newLabel += '0'
+            elif i == blankLocation:
+                newLabel += newBlankLabel
+            else:
+                newLabel += str(label[i])
+        return puzzle(newLabel)
+    def __str__(self):
+        return self.label
+
+
+
+def DFSWithGeneratorShortest(start, end, path = [], shortest = None):
+    #assumes graph is a Digraph
+    #assumes start and end are nodes in graph
+    if start.label == end.label:
+        return path
+    for shift in shiftDict[start.spot]:
+        new = start.transition(shift)
+        if new.label not in path: #avoid cycles
+            if shortest == None or len(path) < len(shortest):
+                newPath = DFSWithGeneratorShortest(new,end,path,shortest)
+                if newPath != None:
+                    shortest = newPath
+    return shortest
+
+def BFSWithGenerator(start, end, q = []):
+    initPath = [start]
+    q.append(initPath)
+    while len(q) != 0:
+        tmpPath = q.pop(0)
+        lastNode = tmpPath[len(tmpPath) - 1]
+        if lastNode.label == end.label:
+            return tmpPath
+        for shift in shiftDict[lastNode.spot]:
+            new = lastNode.transition(shift)
+            if notInPath(new, tmpPath):
+                newPath = tmpPath + [new]
+                q.append(newPath)
+    return None
+
+def DFSWithGenerator(start, end, stack = []):
+    #assumes graph is a Digraph
+    #assumes start and end are nodes in graph
+    initPath = [start]
+    stack.insert(0, initPath)
+    while len(stack)!= 0:
+        tmpPath = stack.pop(0)
+        lastNode = tmpPath[len(tmpPath) - 1]
+        if lastNode.label == end.label:
+            return tmpPath
+        for shift in shiftDict[lastNode.spot]:
+            new = lastNode.transition(shift)
+            if notInPath(new, tmpPath): #avoid cycles
+                newPath = tmpPath + [new]
+                stack.insert(0, newPath)
+    return None
+
+
+def notInPath(node, path):
+    for elt in path:
+        if node.label == elt.label:
+            return False
+    return True
+
+
+shiftDict = {}
+shiftDict[0] = [1, 3]
+shiftDict[1] = [0, 2, 4]
+shiftDict[2] = [1, 5]
+shiftDict[3] = [0, 4, 6]
+shiftDict[4] = [1, 3, 5, 7]
+shiftDict[5] = [2, 4, 8]
+shiftDict[6] = [3, 7]
+shiftDict[7] = [4, 6, 8]
+shiftDict[8] = [5, 7]
+
+goal = puzzle('012345678')
+test1 = puzzle('125638047')
+
+
+def printGrid(pzl):
+    data = pzl.label
+    print data[0], data[1], data[2]
+    print data[3], data[4], data[5]
+    print data[6], data[7], data[8]
+    print ''
+
+def printSolution(path):
+    for elt in path:
+        printGrid(elt)
+
+path = BFSWithGenerator(test1, goal)
+print printSolution(path)
+
+

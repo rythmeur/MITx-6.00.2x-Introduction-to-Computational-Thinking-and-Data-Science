@@ -134,19 +134,39 @@ class ClusterSet(object):
         Adds to self a cluster containing the union of c1 and c2
         and removes c1 and c2 from self """
         # TO DO
-        pass
+        new_cluster = Cluster (c1.points+c2.points,c1.pointType)
+        self.members.remove(c1)
+        self.members.remove(c2)
+        self.add(new_cluster)
+
     def findClosest(self, linkage):
         """ Returns a tuple containing the two most similar 
         clusters in self
         Closest defined using the metric linkage """
         # TO DO
-        pass
+        # print linkage, "linkage"
+        # print linkage(self.members[0], self.members[1])
+        closest=()
+        min_dist = 10**10
+        for cluster1 in self.members:
+            for cluster2 in self.members:
+                if cluster1!=cluster2:
+                    dist=linkage(cluster1, cluster2)
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest=(cluster1,cluster2)
+        return closest
+
     def mergeOne(self, linkage):
         """ Merges the two most simililar clusters in self
         Similar defined using the metric linkage
         Returns the clusters that were merged """
         # TO DO
-        pass
+        closest = self.findClosest(linkage)
+        # print closest
+        self.mergeClusters(closest[0], closest[1])
+        return closest
+
     def numClusters(self):
         return len(self.members)
     def toStr(self):
@@ -246,6 +266,6 @@ def test():
     #hCluster(points, Cluster.averageLinkageDist, 10, False)
     #hCluster(points, Cluster.singleLinkageDist, 10, False)
 
-#test()
+test()
 
 
